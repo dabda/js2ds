@@ -5,9 +5,8 @@ js2ds is a django app that creates JSON files and the associated file and direct
 ```
 Django==1.9.7
 python==3.5.1
+django-bootstrap3
 ```
-
-django-bootstrap3 is also needed.
 
 ## Installation
 
@@ -27,5 +26,11 @@ The *requirements.txt* file has all the tools you need.
 To install them, simply type:
 
 `$ pip install -r requirements.txt`
+
+Add to INSTALLED_APPS in your settings.py:
+
+'bootstrap3',
+
+or install django-bootstrap3 manualy:
 
 `$ pip install django-bootstrap3`
