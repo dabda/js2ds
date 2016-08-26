@@ -1,0 +1,7 @@
+button.collapse_button:after {
+   content: '\25BC'; /* fat up arrow from http://xahlee.info/comp/unicode_arrows.html */
+}
+
+button.collapse_button.active:after {
+    content: "\25B2"; /* fat down arrow from http://xahlee.info/comp/unicode_arrows.html */
+}
