@@ -11,9 +11,11 @@ django-bootstrap3
 ## Installation
 
 ### 1. virtualenv
-You can use [virtualenv](http://www.virtualenv.org/). Create your own project, where `projectname` is the name of your project:
+You can use [virtualenv](http://www.virtualenv.org/). Type
 
-`$ mkvirtualenv --clear projectname`
+`$ virtualenv`
+
+inside your projectname folder.
 
 ### 2. Download
 Download the *django-js2ds-app* project files to your workspace:
