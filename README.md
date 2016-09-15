@@ -10,8 +10,8 @@ django-bootstrap3
 
 ## Installation
 
-### 1. virtualenv
-You can use [virtualenv](http://www.virtualenv.org/). Type
+### 1. virtualenv (optional)
+Use [virtualenv](http://www.virtualenv.org/). Type command
 
 `$ virtualenv`
 
@@ -31,8 +31,17 @@ To install them, simply type:
 
 Add to INSTALLED_APPS in your settings.py:
 
-'bootstrap3',
+    INSTALLED_APPS = [
+        ...
+        'bootstrap3',
+        'js2ds',
+    ]
 
-or install django-bootstrap3 manualy:
+Add to urlpatterns in your urls.py:
 
-`$ pip install django-bootstrap3`
+    from django.conf.urls import url, include
+
+    urlpatterns = [
+        ...
+        url(r'', include('js2ds.urls')),
+    ]
