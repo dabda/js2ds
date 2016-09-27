@@ -1,0 +1,16 @@
+{
+    "ime": {
+        "schema": "z:\\schema3",
+        "parent": "Project.atjs",
+        "author": "d",
+        "project": "z:\\project3",
+        "date": "2016-09-18"
+    },
+    "Group": {
+        "schema": "z:\\group_scheme",
+        "parent": "Group.atjs",
+        "author": "d",
+        "project": "z:\\group",
+        "date": "2016-09-19"
+    }
+}

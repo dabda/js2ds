@@ -1,0 +1,144 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <title>{{ title }}</title>
+
+    {% load staticfiles %}
+    <!-- hide.css styles the js2ds.html -->
+    <link rel="stylesheet" type="text/css" href="{% static 'css/hide.css' %} ">
+
+    <!-- SUMMERNOTE http://summernote.org/ -->
+    <link href="http://netdna.bootstrapcdn.com/bootstrap/3.3.5/css/bootstrap.css" rel="stylesheet">
+    <script src="http://cdnjs.cloudflare.com/ajax/libs/jquery/2.1.4/jquery.js"></script>
+    <script src="http://netdna.bootstrapcdn.com/bootstrap/3.3.5/js/bootstrap.js"></script>
+    <link href="http://cdnjs.cloudflare.com/ajax/libs/summernote/0.8.2/summernote.css" rel="stylesheet">
+    <script src="http://cdnjs.cloudflare.com/ajax/libs/summernote/0.8.2/summernote.js"></script>
+
+</head>
+
+<body>
+
+{% load custom_tags %}
+
+    <div class="container">
+        <h1>{{ title }}</h1>
+
+
+        <!-- this are the two buttons for HOME and META-SCHEMA -->
+        <a href="">
+            <button type="button" class="btn btn-info">
+                <span class="glyphicon glyphicon-refresh"></span> Refresh
+            </button>
+        </a>
+        <a href="{% url 'js2ds-index' %}">
+            <button type="button" class="btn btn-info">
+                <span class="glyphicon glyphicon-home"></span> Home
+            </button>
+        </a>
+        <a href="{% url 'js2ds-meta_schema' %}">
+            <button type="button" class="btn btn-info">
+                <span class="glyphicon glyphicon-info-sign"></span> Meta-Schema
+            </button>
+        </a>
+        <!-- end of two buttons -->
+
+
+        <!-- accordion with SCHEMA FILES, can EDIT, RENAME and DELETE individual files -->
+        <!-- the content is created with schemas.py -->
+        <hr>
+
+        <!-- INFO LABEL -->
+        {% if log_message %}
+            {% if flag == True %}
+                <span class="label label-success">{{ log_message }}</span>
+            {% else %}
+                <span class="label label-danger">{{ log_message }}</span>
+            {% endif %}
+        {% endif %}
+
+
+        {% for key, value in group_data.items %}
+
+        <h2>
+            <span>{{ key }}</span>
+            <button class="btn btn-info collapse_button" type="button" value="collapse_button{{ key }}">
+            </button>
+        </h2>
+            <p><b>Schemas location:</b> {{ value.schema }}</p>
+            <div class="well" id="collapse_button{{ key }}" style="display: none">
+            {% for k, v in value.data.items %}
+                <h3>
+                    <span>{{ k }}</span>
+                    <button class="btn btn-info collapse_button" type="button" value="collapse_button{{ key }}{{ k }}">
+                    </button>
+                </h3>
+                <form class="well" role="form" action="" method="post" id="collapse_button{{ key }}{{ k }}" style="display: none">
+                    {% csrf_token %}
+                    <div class="form-group" hidden>
+                        <input type="text" class="form-control" value="{{ value.schema }}" name="schema_folder">
+                    </div>
+                    <div class="form-group">
+                        {% csrf_token %}
+{#                        <div class="summernote">{% nice_json v %}</div>#}
+                        <textarea class="form-control summernote" name="text_area">{% nice_json v %}</textarea>
+                    </div>
+                    <button type="submit" class="btn btn-success" name="schema_save" formaction="" value="{{ k }}">
+                        <span class="glyphicon glyphicon-floppy-disk"></span> Save changes
+                    </button>
+                    <button type="submit" class="btn btn-warning" name="schema_delete" formaction="" value="{{ k }}">
+                        <span class="glyphicon glyphicon-trash"></span> Delete file {{ k }}
+                    </button>
+                </form>
+                <hr>
+            {% endfor %}
+
+        <!-- UPLOAD FILES and DELETE all schema files -->
+        <form role="form" action="" method="post" enctype="multipart/form-data">
+            {% csrf_token %}
+            <div class="">
+                <label class="btn btn-success btn-file">
+                    <span class="glyphicon glyphicon-folder-open"></span> Upload Schema Files
+                    <input name="upload_files_{{ value.schema }}" onchange="this.form.submit()" formaction="" type="file" multiple style="display: none;">
+                </label>
+
+                <button type="submit" class="btn btn-warning" name="delete_all" formaction="" value="{{ value.schema }}">
+                    <span class="glyphicon glyphicon-trash"></span> Delete All Schema Files
+                </button>
+            </div>
+        </form>
+
+        </div>
+        <hr>
+        {% endfor %}
+
+    </div>
+
+    <script>
+    $(document).ready(function() {
+        $('.summernote').summernote();
+    });
+    </script>
+
+    <!-- SCRIPT for collapse_button hides and shows elements -->
+    <script>
+    var acc = document.getElementsByClassName("collapse_button");
+    var i;
+
+    for (i = 0; i < acc.length; i++) {
+        acc[i].onclick = function(){
+            this.classList.toggle("active");
+            //this.nextElementSibling.classList.toggle("show");
+            var div = document.getElementById(this.value);
+            if (div.style.display !== 'none') {
+                div.style.display = 'none';
+            }
+            else {
+                div.style.display = 'block';
+            }
+        }
+    }
+    </script>
+
+
+</body>
+</html>

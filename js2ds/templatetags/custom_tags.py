@@ -50,3 +50,19 @@ def minmax(json_data):
     else:
         data += 'inf'
     return data
+
+
+@register.simple_tag
+def minimum(json_data):
+    data = "-inf"
+    if 'minimum' in json_data:
+        data = json_data['minimum']
+    return data
+
+
+@register.simple_tag
+def maximum(json_data):
+    data = "+inf"
+    if 'maximum' in json_data:
+        data = json_data['maximum']
+    return data

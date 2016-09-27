@@ -1,0 +1,76 @@
+{
+    "1": {
+        "files_download": {},
+        "entity_name": "Test",
+        "files": {},
+        "entity_list": [
+            "Test"
+        ],
+        "schema_filename": "Group.atjs",
+        "schema_data": {
+            "Info": {
+                "eType": "Info",
+                "parameters": [
+                    "Group-{}"
+                ],
+                "description": "Group Info",
+                "type": "entity[]"
+            },
+            "Description": {
+                "description": "Short description",
+                "pattern": "[A-Za-z]{1,9}",
+                "type": "string"
+            },
+            "Date": {
+                "description": "Date of last change",
+                "pattern": "[0-9]{1,2}[-][0-9]{1,2}[-][0-9]{4}",
+                "type": "string"
+            },
+            "Users": {
+                "eType": "User",
+                "parameters": [
+                    "Group-{}"
+                ],
+                "description": "Users",
+                "type": "entity[]"
+            },
+            "Author": {
+                "description": "Author",
+                "type": "string"
+            },
+            "Version": {
+                "description": "Version number",
+                "type": "double"
+            },
+            "Name": {
+                "description": "Project name",
+                "type": "entity_name"
+            }
+        },
+        "parameters": [],
+        "title": "Test",
+        "order": [
+            "Name",
+            "Description",
+            "Version",
+            "Author",
+            "Date",
+            "Info",
+            "Users"
+        ],
+        "existing_data": {
+            "Group": {
+                "Info": [
+                    "info1"
+                ],
+                "Description": "hhhhh",
+                "Date": "19-9-2016",
+                "Author": "d",
+                "Users": [],
+                "Version": 3.13
+            }
+        },
+        "filename": "z:\\group/Group-Test/proj/Test.atp",
+        "schema_name": "Group"
+    }
+}

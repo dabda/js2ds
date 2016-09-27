@@ -1,0 +1,34 @@
+{
+  "Name"     : "Property types",
+  
+  "types":   {	
+      "string" : {
+            "displayControl": "TextField validation", 
+            "pattern": "string"      
+      },
+      "integer" :  {
+            "displayControl": "TextField validation", 
+            "minimum": "string",      
+            "maximum": "string"      
+      },
+      "double" :  {
+            "displayControl": "TextField validation", 
+            "minimum": "string",      
+            "maximum": "string"      
+      },
+      "file" : {
+            "displayControl": ["TextField readonly", "Browse button", "Edit button"],
+            "value": "string",
+            "root": "string"
+      },
+      "files" : {
+            "displayControl": ["TextField[] readonly", "OpenFileManager button"],
+            "root": "string"
+      },
+      "entity" : {
+            "displayControl": ["TextField readonly", "Edit button", "Delete button"], 
+            "eType": "string",
+            "parameters": "table"
+      }
+  }
+}

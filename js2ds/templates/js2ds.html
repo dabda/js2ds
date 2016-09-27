@@ -1,0 +1,1171 @@
+<!DOCTYPE html>
+<html lang="en" xmlns="http://www.w3.org/1999/html">
+<head>
+    <title>{{ title }}</title>
+
+    {% load staticfiles %}
+    <!-- hide.css styles the js2ds.html -->
+    <link rel="stylesheet" type="text/css" href="{% static 'css/hide.css' %} ">
+
+    <!-- SUMMERNOTE http://summernote.org/ -->
+    <link href="http://netdna.bootstrapcdn.com/bootstrap/3.3.5/css/bootstrap.css" rel="stylesheet">
+    <script src="http://cdnjs.cloudflare.com/ajax/libs/jquery/2.1.4/jquery.js"></script>
+    <script src="http://netdna.bootstrapcdn.com/bootstrap/3.3.5/js/bootstrap.js"></script>
+    <link href="http://cdnjs.cloudflare.com/ajax/libs/summernote/0.8.2/summernote.css" rel="stylesheet">
+    <script src="http://cdnjs.cloudflare.com/ajax/libs/summernote/0.8.2/summernote.js"></script>
+
+</head>
+
+<body>
+
+{% load custom_tags %}
+
+    <!-- NAVIGATION -->
+    <nav class="navbar navbar-default container"></nav> <!-- Dummy nav bar -->
+    <nav class="navbar navbar-default navbar-fixed-top container">
+        <div class="container-fluid">
+            <!-- Brand and toggle get grouped for better mobile display -->
+            <div class="navbar-header">
+                <button type="button" class="navbar-toggle collapsed" data-toggle="collapse" data-target="#bs-example-navbar-collapse-1" aria-expanded="false">
+                    <span class="sr-only">Toggle navigation</span>
+                    <span class="icon-bar"></span>
+                    <span class="icon-bar"></span>
+                    <span class="icon-bar"></span>
+                </button>
+                <a class="navbar-brand" href="#">js2ds</a>
+            </div>
+
+            <!-- Collect the nav links, forms, and other content for toggling -->
+            <div class="collapse navbar-collapse" id="bs-example-navbar-collapse-1">
+                <form class="navbar-form navbar-left">
+                    <button type="submit" class="btn btn-info" formaction="{% url 'js2ds-index' %}">
+                        <span class="glyphicon glyphicon-backward"></span> Home
+                    </button>
+                </form>
+                <ul class="nav navbar-nav">
+                    {% for elli in entity_list %}
+                        {% if forloop.last %}
+                            <li class="active"><a href="#" id="{{ forloop.counter }}" onclick="navigate(this.id)"><b>{{ elli }} /</b></a></li>
+                        {% else %}
+                            <li><a href="#" id="{{ forloop.counter }}" onclick="navigate(this.id)">{{ elli }} /</a></li>
+                        {% endif %}
+                    {% endfor %}
+                </ul>
+
+                <form class="navbar-form navbar-right">
+                    <label class="btn btn-danger" for="reset_button">
+                        <span class="glyphicon glyphicon-retweet"></span> Reset
+                    </label>
+                    <button type="button" onclick="validate()" class="btn btn-danger">
+                        <span class="glyphicon glyphicon-question-sign"></span> Validate
+                    </button>
+                    <!-- <button type="submit" form="form1" value="Submit">Submit</button> -->
+                    <label class="btn btn-success" for="submit_button">
+                        <span class="glyphicon glyphicon-ok"></span> Submit
+                    </label>
+                </form>
+
+            </div><!-- /.navbar-collapse -->
+        </div><!-- /.container-fluid -->
+    </nav>
+
+    <!-- MAIN BODY PART -->
+    <div class="container">
+
+        {% block content %}
+
+        <!-- ORDER of displaying elements, o is also the name of resulting JSON keys -->
+        <form class="form-horizontal well" id="main_form" role="form" method="post" enctype="multipart/form-data">
+
+        <!-- SUBMIT, VALIDATE, RESET and HOME-->
+        {% csrf_token %}
+        <div class="form-group row" hidden>
+            <div class="text-left col-sm-6">
+                <a href="{% url 'js2ds-index' %}">
+                    <button type="button" class="btn btn-info">
+                        <span class="glyphicon glyphicon-triangle-left"></span> Home
+                    </button>
+                </a>
+            </div>
+            <div class="text-right col-sm-6">
+            <button type="reset" class="btn btn-danger" id="reset_button">
+                <span class="glyphicon glyphicon-retweet"></span> Reset
+            </button>
+            <button type="button" onclick="validate()" class="btn btn-danger">
+                <span class="glyphicon glyphicon-question-sign"></span> Validate
+            </button>
+            <button type="submit" class="btn btn-success" id="submit_button" name="submit_button" value="SUBMIT" formaction="">
+                <span class="glyphicon glyphicon-ok"></span> Submit
+            </button>
+            <!-- EXTRA BUTTONS FOR NAVIGATION -->
+            {% for elli in entity_list %}
+            <button type="submit" class="btn btn-success" id="navigation{{ forloop.counter }}" name="navigation{{ forloop.counter }}" value="{{ forloop.counter }}" formaction="">
+                {{ elli }}
+            </button>
+            {% endfor %}
+
+            </div>
+        </div>
+{#        <hr>#}
+
+        {% csrf_token %}
+        <div>
+
+        <!-- Schema filename hidden value ( example: Project.atjs ) -->
+        <div class="form-group" hidden>
+                <input type="text" class="form-control" value="{{ schema_filename }}" name="schema_filename">
+        </div>
+
+        <!-- Entity list hidden value ( example: BasicSort,QuickSort ) -->
+        <div class="form-group" hidden>
+                <input type="text" class="form-control" value="{{ entity_list }}" name="entity_list">
+        </div>
+
+        <!-- Parameters list ( example: ["PROJ-{}]", "[algs/ALG-{}]" ) -->
+        <div class="form-group" hidden>
+                <input type="text" class="form-control" value="{{ parameters }}" name="parameters">
+        </div>
+
+        <!-- Filename location of the resulting JSON file -->
+        <div class="form-group">
+            <label class="col-sm-3 control-label">Filename</label>
+            <div class="col-sm-7">
+                <input type="text" class="form-control" value="{{ filename }}" name="Filename" readonly>
+            </div>
+            <div class="col-sm-2">
+            </div>
+        </div>
+
+        {% for o in order %}
+            {% for key, value in schema_data.items %}
+                {% if key == o %}
+                    {% for k, v in value.items %}
+
+                        {% if k == 'type' %}
+
+                            <!-- ENTITY NAME -->
+                            {% if v == 'entity_name' %}
+                                <div class="form-group has-feedback">
+                                    <label class="col-sm-3 control-label">{% description value %}</label>
+                                    <div class="col-sm-7">
+                                        <div class="input-group">
+                                            <input type="text" class="form-control" name="{{ o }}" value="{{ entity_name }}" readonly>
+                                            <span class="input-group-btn">
+                                                <button class="btn btn-secondary" type="button" disabled><b>{{ v }}</b></button>
+                                            </span>
+                                        </div>
+                                    </div>
+                                    <div class="col-sm-2">
+                                    </div>
+                                </div>
+                            {% endif %}
+
+                            <!-- STRING -->
+                            {% if v == 'string' %}
+                                {% for a, b in existing_data.items %}
+                                    {% for a2, b2 in b.items %}
+                                        {% if a2 == o %}
+                                            <div class="form-group">
+                                                <label class="control-label col-sm-3">{% description value %}</label>
+                                                <div class="col-sm-7">
+                                                    <div class="input-group">
+                                                        <input type="text" {% if value.pattern %}pattern="{% pattern value %}"{% endif %} class="form-control" id="{{ o }}" name="{{ o }}" value="{{ b2 }}" onkeyup="validate()" onchange="validate()">
+                                                        <span class="input-group-btn">
+                                                            <button class="btn btn-secondary" id="pattern{{ o }}" value="{% pattern value %}" type="button" disabled><b>{{ v }}</b></button>
+                                                        </span>
+                                                    </div>
+                                                </div>
+                                                <div class="col-sm-2">
+                                                    {% if value.pattern %}
+                                                    <small class="text-muted" id="error{{ o }}"><code class="bg-danger"><b>{% pattern value %}</b></code></small>
+                                                    <!-- <label class="control-label small" id="error{{ o }}"></label> -->
+                                                    {% endif %}
+                                                </div>
+                                            </div>
+                                        {% endif %}
+                                    {% endfor %}
+                                {% endfor %}
+                            {% endif %}
+
+                            <!-- STRING[] -->
+                            {% if v == 'string[]' %}
+                                {% for a, b in existing_data.items %}
+                                    {% for a2, b2 in b.items %}
+                                        {% if a2 == o %}
+                                            <div class="form-group">
+                                                <label class="control-label col-sm-3">{% description value %}</label>
+                                                <div class="col-sm-7">
+                                                    <div class="input-group">
+                                                        <input type="text" class="form-control" id="{{ o }}" name="{{ o }}" value="{{ b2 }}" readonly>
+                                                        <span class="input-group-btn">
+                                                            <button class="btn btn-secondary" id="pattern_string_array{{ o }}" value="{% pattern value %}" type="button" disabled><b>{{ v }}</b></button>
+                                                        </span>
+                                                    </div>
+                                                </div>
+                                                <div class="col-sm-2">
+                                                    {% if value.pattern %}
+                                                    <small class="text-muted" id="error{{ o }}"><code class="bg-danger"><b>{% pattern value %}</b></code></small>
+                                                    <!-- <label class="control-label small" id="error{{ o }}"></label> -->
+                                                    {% endif %}
+                                                </div>
+                                            </div>
+                                            <!-- input comma separated values -->
+                                            <div class="form-group">
+                                                <div class="col-sm-4">
+                                                </div>
+                                                <div class="col-sm-6 col-xs-6">
+                                                    <input type="text" value="{% for str_element in b2 %}{{ str_element }}{% if forloop.last %}{% else %},{% endif %}{% endfor %}" class="form-control" name="string_array{{ o }}" placeholder="Input comma separated values" onkeyup="string_array(this.value, this.name);validate()" autocomplete="off">
+                                                </div>
+                                                <div class="col-sm-2 col-xs-6">
+                                                    <small class="text-muted"><code><b>Comma separated strings</b></code></small>
+                                                </div>
+                                            </div>
+                                        {% endif %}
+                                    {% endfor %}
+                                {% endfor %}
+                            {% endif %}
+
+                            <!-- INTEGER -->
+                            {% if v == 'integer' %}
+                                {% for a, b in existing_data.items %}
+                                    {% for a2, b2 in b.items %}
+                                        {% if a2 == o %}
+                                            <div class="form-group">
+                                                <label class="control-label col-sm-3">{% description value %}</label>
+                                                <div class="col-sm-7">
+                                                    <div class="input-group">
+                                                        <input type="number" min="{% minimum value %}" max="{% maximum value %}" step="1" class="form-control" id="{{ o }}" name="{{ o }}" value="{{ b2 }}" onkeyup="validate()" onchange="validate()">
+                                                        <span class="input-group-btn">
+                                                            <button class="btn btn-secondary" id="minmax{{ o }}" value="{% minmax value %}" type="button" disabled><b>{{ v }}</b></button>
+                                                        </span>
+                                                    </div>
+                                                </div>
+                                                <div class="col-sm-2">
+                                                    <small class="text-muted" id="error{{ o }}">min:<kbd>{% minimum value %}</kbd> max:<kbd>{% maximum value %}</kbd></small>
+                                                </div>
+                                            </div>
+                                        {% endif %}
+                                    {% endfor %}
+                                {% endfor %}
+                            {% endif %}
+
+                            <!-- INTEGER[] -->
+                            {% if v == 'integer[]' %}
+                                {% for a, b in existing_data.items %}
+                                    {% for a2, b2 in b.items %}
+                                        {% if a2 == o %}
+                                            <div class="form-group">
+                                                <label class="control-label col-sm-3">{% description value %}</label>
+                                                <div class="col-sm-7">
+                                                    <div class="input-group">
+                                                        <input type="text" class="form-control" id="{{ o }}" name="{{ o }}" value="{{ b2 }}" readonly>
+                                                        <span class="input-group-btn">
+                                                            <button class="btn btn-secondary" id="minmax_integer_array{{ o }}" value="{% minmax value %}" type="button" disabled><b>{{ v }}</b></button>
+                                                        </span>
+                                                    </div>
+                                                </div>
+                                                <div class="col-sm-2">
+                                                    <small class="text-muted" id="error{{ o }}">min:<kbd>{% minimum value %}</kbd> max:<kbd>{% maximum value %}</kbd></small>
+                                                </div>
+                                            </div>
+                                            <!-- input comma separated values -->
+                                            <div class="form-group">
+                                                <div class="col-sm-4">
+                                                </div>
+                                                <div class="col-sm-6 col-xs-6">
+                                                    <input type="text" value="{% for str_element in b2 %}{{ str_element }}{% if forloop.last %}{% else %},{% endif %}{% endfor %}" class="form-control" name="integer_array{{ o }}" placeholder="Input comma separated values" onkeyup="integer_array(this.value, this.name);validate()" autocomplete="off">
+                                                </div>
+                                                <div class="col-sm-2 col-xs-6">
+                                                    <small class="text-muted"><code><b>Comma separated integers</b></code></small>
+                                                </div>
+                                            </div>
+                                        {% endif %}
+                                    {% endfor %}
+                                {% endfor %}
+                            {% endif %}
+
+                            <!-- DOUBLE -->
+                            {% if v == 'double' %}
+                                {% for a, b in existing_data.items %}
+                                    {% for a2, b2 in b.items %}
+                                        {% if a2 == o %}
+                                            <div class="form-group">
+                                                <label class="control-label col-sm-3">{% description value %}</label>
+                                                <div class="col-sm-7">
+                                                    <div class="input-group">
+                                                        <input type="number" min="{% minimum value %}" max="{% maximum value %}" step="any" class="form-control" id="{{ o }}" name="{{ o }}" value="{{ b2 }}" onkeyup="validate()" onchange="validate()">
+                                                        <span class="input-group-btn">
+                                                            <button class="btn btn-secondary" id="minmaxdouble{{ o }}" value="{% minmax value %}" type="button" disabled><b>{{ v }}</b></button>
+                                                        </span>
+                                                    </div>
+                                                </div>
+                                                <div class="col-sm-2">
+                                                    <small class="text-muted" id="error{{ o }}">min:<kbd>{% minimum value %}</kbd> max:<kbd>{% maximum value %}</kbd></small>
+                                                </div>
+                                            </div>
+                                        {% endif %}
+                                    {% endfor %}
+                                {% endfor %}
+                            {% endif %}
+
+                            <!-- DOUBLE[] -->
+                            {% if v == 'double[]' %}
+                                {% for a, b in existing_data.items %}
+                                    {% for a2, b2 in b.items %}
+                                        {% if a2 == o %}
+                                            <div class="form-group">
+                                                <label class="control-label col-sm-3">{% description value %}</label>
+                                                <div class="col-sm-7">
+                                                    <div class="input-group">
+                                                        <input type="text" class="form-control" id="{{ o }}" name="{{ o }}" value="{{ b2 }}" readonly>
+                                                        <span class="input-group-btn">
+                                                            <button class="btn btn-secondary" id="minmax_double_array{{ o }}" value="{% minmax value %}" type="button" disabled><b>{{ v }}</b></button>
+                                                        </span>
+                                                    </div>
+                                                </div>
+                                                <div class="col-sm-2">
+                                                    <small class="text-muted" id="error{{ o }}">min:<kbd>{% minimum value %}</kbd> max:<kbd>{% maximum value %}</kbd></small>
+                                                </div>
+                                            </div>
+                                            <!-- input comma separated values -->
+                                            <div class="form-group">
+                                                <div class="col-sm-4">
+                                                </div>
+                                                <div class="col-sm-6 col-xs-6">
+                                                    <input type="text" value="{% for str_element in b2 %}{{ str_element }}{% if forloop.last %}{% else %},{% endif %}{% endfor %}" class="form-control" name="integer_array{{ o }}" placeholder="Input comma separated values" onkeyup="integer_array(this.value, this.name);validate()" autocomplete="off">
+                                                </div>
+                                                <div class="col-sm-2 col-xs-6">
+                                                    <small class="text-muted"><code><b>Comma separated doubles</b></code></small>
+                                                </div>
+                                            </div>
+                                        {% endif %}
+                                    {% endfor %}
+                                {% endfor %}
+                            {% endif %}
+
+                            <!-- FILE -->
+                            {% if v == 'file' %}
+                                {% for a, b in existing_data.items %}
+                                    {% for a2, b2 in b.items %}
+                                        {% if a2 == o %}
+                                            <div class="form-group">
+                                                <label class="control-label col-sm-3 col-xs-12">{% description value %}</label>
+                                                <div class="col-sm-7 col-xs-6">
+                                                    <div class="input-group">
+                                                        {% if value.value %}
+                                                            <input type="text" class="form-control" id="{{ o }}" name="{{ o }}" value="{{ value.value }}" readonly>
+                                                        {% else %}
+                                                            <input type="text" class="form-control" id="{{ o }}" name="{{ o }}" value="{{ b2 }}">
+                                                        {% endif %}
+                                                        <span class="input-group-btn">
+                                                            <button class="btn btn-secondary" type="button" disabled><b>{{ v }}</b></button>
+                                                        </span>
+                                                    </div>
+                                                </div>
+                                                <div class="col-sm-2 col-xs-6">
+                                                    <span class="input-group-btn">
+                                                        <button class="btn btn-info collapse_button" type="button" value="collapse_button{{ o }}">
+                                                            <span class="glyphicon glyphicon-pencil"></span>
+                                                        </button>
+                                                        <label class="btn btn-success btn-file">
+                                                            <input type="file" id="area{{ o }}" style="display: none;" onchange="read(this.id)">
+                                                            <span class="glyphicon glyphicon-folder-open"></span>
+                                                            </input>
+                                                        </label>
+                                                    </span>
+                                                </div>
+                                            </div>
+                                            <!-- second part of File the hidden panel -->
+                                            <div class = "well" id="collapse_button{{ o }}" style="display: none">
+                                                {% csrf_token %}
+                                                <textarea class="form-control summernote" id="textarea{{ o }}" name="textarea{{ o }}">{% for fk, fv in files.items %}{% if fk == o %}{% if fv != None %}{{ fv }}{% endif %}{% endif %}{% endfor %}</textarea>
+                                            </div>
+                                            <!-- root info -->
+                                            <div class="form-group" hidden>
+                                                    <input type="text" class="form-control" value="{% root value %}" name="root{{ o }}">
+                                            </div>
+
+                                        {% endif %}
+                                    {% endfor %}
+                                {% endfor %}
+                            {% endif %}
+
+                            <!-- FILES -->
+                            {% if v == 'files' %}
+                                {% for a, b in existing_data.items %}
+                                    {% for a2, b2 in b.items %}
+                                        {% if a2 == o %}
+                                            <div class="form-group">
+                                                <label class="control-label col-sm-3 col-xs-12">{% description value %}</label>
+                                                <div class="col-sm-7 col-xs-6">
+                                                     <div class="input-group">
+                                                        <input type="text" class="form-control" id="{{ o }}" name="{{ o }}" value="{{ b2 }}" readonly>
+                                                        <span class="input-group-btn">
+                                                            <button class="btn btn-secondary" type="button" disabled><b>{{ v }}</b></button>
+                                                        </span>
+                                                    </div>
+                                                </div>
+                                                <div class="col-sm-2 col-xs-6">
+                                                    <span class="input-group-btn">
+                                                    {% csrf_token %}
+                                                        {% if b2 %}
+                                                        <!-- Collapse Button -->
+                                                        <button class="btn btn-info collapse_button" type="button" id="files_collapse_button{{ o }}" value="collapse_button{{ o }}">
+                                                            <span class="glyphicon glyphicon-th-list"></span>
+                                                        </button>
+                                                        {% endif %}
+                                                        <!-- Delete all files button -->
+                                                        <button class="btn btn-warning" id="delete_files{{ o }}" onclick="delete_files(this.id)" type="button">
+                                                            <span class="glyphicon glyphicon-trash"></span>
+                                                        </button>
+                                                        <!-- Browse Files -->
+                                                        <label class="btn btn-success btn-file">
+                                                            <input type="file" name="upload_files{{ o }}" id="area{{ o }}" style="display: none;" onchange="readFiles(this.id)" multiple>
+                                                            <span class="glyphicon glyphicon-folder-open"></span>
+                                                            </input>
+                                                        </label>
+                                                    </span>
+                                                </div>
+                                            </div>
+                                            <!-- listing files elements -->
+                                            {% if b2 %}
+                                                <div id="collapse_button{{ o }}" style="display: none">
+                                                {% for el in b2 %}
+                                                    <div class="form-group" id="hide_one_file{{ el }}">
+                                                        <div class="col-sm-4">
+                                                        </div>
+                                                        <div class="col-sm-6 col-xs-6">
+                                                            <input type="text" class="form-control" value="{{ el }}" disabled>
+                                                        </div>
+                                                        <div class="col-sm-2 col-xs-6">
+                                                            <span class="input-group-btn">
+                                                                <!-- DOWNLOAD BUTTON -->
+{#                                                                <a href="file:///{% for fk, fv in files_download.items %}{% if fk == o %}{% for arr in fv %}{% if el in arr %}{{ arr }}{% endif %}{% endfor %}{% endif %}{% endfor %}" download>#}
+{#                                                                    <button class="btn btn-info" type="button" disabled>#}
+{#                                                                        {% bootstrap_icon "save" %}#}
+{#                                                                    </button>#}
+{#                                                                </a>#}
+                                                                <!-- DELETE BUTTON -->
+                                                                <button class="btn btn-warning" id="remove_file{{ o }}" value="{{ el }}" onclick="delete_file(this.id, this.value)" type="button">
+                                                                    <span class="glyphicon glyphicon-trash"></span>
+                                                                </button>
+                                                            </span>
+                                                        </div>
+                                                    </div>
+                                                {% endfor %}
+                                                </div>
+                                            {% endif %}
+                                            <!-- root info -->
+                                            <div class="form-group" hidden>
+                                                    <input type="text" class="form-control" value="{% root value %}" name="root{{ o }}">
+                                            </div>
+
+                                        {% endif %}
+                                    {% endfor %}
+                                {% endfor %}
+                            {% endif %}
+
+{#                            <!-- ENTITY -->#}
+{#                            {% if v == 'entity' %}#}
+{#                                {% for a, b in existing_data.items %}#}
+{#                                    {% for a2, b2 in b.items %}#}
+{#                                        {% if a2 == o %}#}
+{#                                            <!-- first part of ENTITY -->#}
+{#                                            <div class="form-group">#}
+{#                                                <label class="control-label col-sm-3 col-xs-12">{% description value %}</label>#}
+{#                                                <div class="col-sm-7 col-xs-6">#}
+{#                                                     <div class="input-group">#}
+{#                                                        <input type="text" class="form-control" id="{{ o }}" name="{{ o }}" value="{{ b2 }}" readonly>#}
+{#                                                        <span class="input-group-btn">#}
+{#                                                            <button class="btn btn-secondary" type="button" disabled>{{ v }}</button>#}
+{#                                                        </span>#}
+{#                                                    </div>#}
+{#                                                </div>#}
+{#                                                <div class="col-sm-2 col-xs-6">#}
+{#                                                    {% if b2 %}#}
+{#                                                    {% buttons %}#}
+{#                                                        <span class="input-group-btn">#}
+{#                                                            <!-- Collapse button -->#}
+{#                                                            <button class="btn btn-info collapse_button" type="button" id="files_collapse_button{{ o }}" value="collapse_button{{ o }}">#}
+{#                                                                {% bootstrap_icon "th-list" %}#}
+{#                                                            </button>#}
+{#                                                            <!-- Delete all files button -->#}
+{#                                                            <button class="btn btn-warning" id="delete_files{{ o }}" onclick="delete_files(this.id)" type="button">#}
+{#                                                            {% bootstrap_icon "trash" %}#}
+{#                                                            </button>#}
+{#                                                        </span>#}
+{##}
+{#                                                    {% endbuttons %}#}
+{#                                                    {% endif %}#}
+{#                                                </div>#}
+{#                                            </div>#}
+{#                                            <!-- create new entity -->#}
+{#                                            <div class="form-group">#}
+{#                                                <div class="col-sm-4">#}
+{#                                                </div>#}
+{#                                                <div class="col-sm-6 col-xs-6">#}
+{#                                                    <input type="text" class="form-control" name="add_entity_name{{ o }}" placeholder="{% description value %} Name">#}
+{#                                                </div>#}
+{#                                                <div class="col-sm-2 col-xs-6">#}
+{#                                                    {% buttons %}#}
+{#                                                    <!-- BUTTON CREATE NEW ENTITY -->#}
+{#                                                    <span class="input-group-btn">#}
+{#                                                        <button class="btn btn-success" name="add_entity{{ o }}" value="ADD" type="submit">#}
+{#                                                            {% bootstrap_icon "plus" %}#}
+{#                                                        </button>#}
+{#                                                    </span>#}
+{#                                                    {% endbuttons %}#}
+{#                                                </div>#}
+{#                                            </div>#}
+{#                                            <!-- eType info -->#}
+{#                                            <div class="form-group" hidden>#}
+{#                                                    <input type="text" class="form-control" value="{% eType value %}" name="eType{{ o }}">#}
+{#                                            </div>#}
+{#                                            <!-- parameters info -->#}
+{#                                            <div class="form-group" hidden>#}
+{#                                                    <input type="text" class="form-control" value="{% parameters value %}" name="param{{ o }}">#}
+{#                                            </div>#}
+{##}
+{#                                        {% endif %}#}
+{#                                    {% endfor %}#}
+{#                                {% endfor %}#}
+{#                            {% endif %}#}
+
+                            <!-- ENTITY[] -->
+                            {% if v == 'entity[]' %}
+                                {% for a, b in existing_data.items %}
+                                    {% for a2, b2 in b.items %}
+                                        {% if a2 == o %}
+                                            <!-- first part of ENTITY -->
+                                            <div class="form-group">
+                                                <label class="control-label col-sm-3 col-xs-12">{% description value %}</label>
+                                                <div class="col-sm-7 col-xs-6">
+                                                     <div class="input-group">
+                                                        <input type="text" class="form-control" id="{{ o }}" name="{{ o }}" value="{{ b2 }}" readonly>
+                                                        <span class="input-group-btn">
+                                                            <button class="btn btn-secondary" type="button" disabled><b>{{ v }}</b></button>
+                                                        </span>
+                                                    </div>
+                                                </div>
+                                                <div class="col-sm-2 col-xs-6">
+                                                    {% if b2 %}
+                                                        <span class="input-group-btn">
+                                                            <!-- Collapse button -->
+                                                            <button class="btn btn-info collapse_button" type="button" id="files_collapse_button{{ o }}" value="collapse_button{{ o }}">
+                                                                <span class="glyphicon glyphicon-th-list"></span>
+                                                            </button>
+                                                            <!-- Delete all files button -->
+                                                            <button class="btn btn-warning" id="delete_files{{ o }}" onclick="delete_files(this.id)" type="button">
+                                                            <span class="glyphicon glyphicon-trash"></span>
+                                                            </button>
+                                                        </span>
+
+                                                    {% endif %}
+                                                </div>
+                                            </div>
+                                            <!-- listing entity elements -->
+                                            {% if b2 %}
+                                                <div id="collapse_button{{ o }}" style="display: none">
+                                                {% for el in b2 %}
+                                                    <div class="form-group" id="hide_one_file{{ el }}">
+                                                        <div class="col-sm-4">
+                                                        </div>
+                                                        <div class="col-sm-6 col-xs-6">
+                                                            <input type="text" class="form-control" name="input_edit{{ forloop.counter }}{{ o }}" value="{{ el }}" readonly>
+                                                        </div>
+                                                        <div class="col-sm-2 col-xs-6">
+                                                            <span class="input-group-btn">
+                                                                <!-- EDIT BUTTON -->
+                                                                <button class="btn btn-info" name="edit{{ forloop.counter }}{{ o }}" type="submit" value="EDIT">
+                                                                    <span class="glyphicon glyphicon-wrench"></span>
+                                                                </button>
+                                                                <!-- DELETE BUTTON -->
+                                                                <button class="btn btn-warning" id="remove_file{{ o }}" value="{{ el }}" onclick="delete_file(this.id, this.value)" type="button">
+                                                                    <span class="glyphicon glyphicon-trash"></span>
+                                                                </button>
+                                                            </span>
+                                                        </div>
+                                                    </div>
+                                                {% endfor %}
+                                                </div>
+                                            {% endif %}
+                                            <!-- create new entity -->
+                                            <div class="form-group">
+                                                <div class="col-sm-4">
+                                                </div>
+                                                <div class="col-sm-6 col-xs-6">
+                                                    <input type="text" class="form-control" name="add_entity_name{{ o }}" placeholder="Input {% description value %} entity name" onkeyup="enable_add_button(this.value, this.name)" autocomplete="off">
+                                                </div>
+                                                <div class="col-sm-2 col-xs-6">
+                                                    <!-- BUTTON CREATE NEW ENTITY -->
+                                                    <span class="input-group-btn">
+                                                        <button class="btn btn-success" id="add_entity{{ o }}" name="add_entity{{ o }}" value="ADD" type="submit" disabled>
+                                                            <span class="glyphicon glyphicon-plus"></span>
+                                                        </button>
+                                                    </span>
+                                                </div>
+                                            </div>
+                                            <!-- eType info -->
+                                            <div class="form-group" hidden>
+                                                    <input type="text" class="form-control" value="{% eType value %}" name="eType{{ o }}">
+                                            </div>
+                                            <!-- parameters info -->
+                                            <div class="form-group" hidden>
+                                                    <input type="text" class="form-control" value="{% parameters value %}" name="param{{ o }}">
+                                            </div>
+
+                                        {% endif %}
+                                    {% endfor %}
+                                {% endfor %}
+                            {% endif %}
+
+                            <!-- END OF TYPES -->
+
+                        {% endif %}
+                    {% endfor %}
+                {% endif %}
+            {% endfor %}
+        {% endfor %}
+        </div>
+{#        <hr>#}
+
+        <!-- SUBMIT, VALIDATE, RESET and HOME-->
+        {% csrf_token %}
+
+        <div class="form-group row" hidden>
+            <div class="text-left col-sm-6">
+            <a href="{% url 'js2ds-index' %}">
+                <button type="button" class="btn btn-info">
+                    <span class="glyphicon glyphicon-triangle-left"></span> Home
+                </button>
+            </a>
+            </div>
+            <div class="text-right col-sm-6">
+            <button type="reset" class="btn btn-danger">
+                <span class="glyphicon glyphicon-retweet"></span> Reset
+            </button>
+            <button type="button" onclick="validate()" class="btn btn-danger">
+                <span class="glyphicon glyphicon-question-sign"></span> Validate
+            </button>
+            <button type="submit" class="btn btn-success" id="submit_button" name="submit_button" value="SUBMIT" formaction="">
+                <span class="glyphicon glyphicon-ok"></span> Submit
+            </button>
+            </div>
+        </div>
+
+        </form>
+
+
+    </div>
+
+    <script>
+    $(document).ready(function() {
+        $('.summernote').summernote({
+            placeholder: 'Your text goes here...'
+        });
+    });
+    </script>
+
+    <!-- SCRIPT for collapse_button hides and shows elements -->
+    <script>
+    var acc = document.getElementsByClassName("collapse_button");
+    var i;
+
+    for (i = 0; i < acc.length; i++) {
+        acc[i].onclick = function(){
+            this.classList.toggle("active");
+            //this.nextElementSibling.classList.toggle("show");
+            var div = document.getElementById(this.value);
+            if (div.style.display !== 'none') {
+                div.style.display = 'none';
+            }
+            else {
+                div.style.display = 'block';
+            }
+        }
+    }
+    </script>
+
+    <!-- SCRIPT for removing FILES from input area -->
+    <script>
+    function delete_files(arg_id){
+        // set value to []
+        var input_id = arg_id.replace('delete_files', '');
+        var input_field = document.getElementById(input_id);
+        input_field.value = "[]";
+        // hide elements
+        document.getElementById('collapse_button' + input_id).style.display = 'none';
+        //hide collapse button
+        document.getElementById('files_collapse_button' + input_id).style.display = 'none';
+    }
+    </script>
+
+    <!-- SCRIPT for removing single FILE from input area -->
+    <script>
+    function delete_file(arg_id, arg_value){
+        var input_id = arg_id.replace('remove_file', '');
+        var input_field = document.getElementById(input_id);
+        var output = input_field.value;
+        output = output.replace(/'/g, '"');
+        var array = JSON.parse(output);
+        var new_output = [];
+        for (var i = 0; i < array.length; i++){
+            if (array[i] != arg_value){
+                new_output.push(array[i]);
+            }
+        }
+        new_output = JSON.stringify(new_output);
+        input_field.value = new_output;
+        // hide this file listing element
+        document.getElementById('hide_one_file' + arg_value).style.display = 'none';
+        if (new_output == "[]"){
+            //hide collapse button
+            document.getElementById('files_collapse_button' + input_id).style.display = 'none';
+        }
+    }
+    </script>
+
+
+
+    <!-- SCRIPT for reading FILE into textarea and putting filename into input form -->
+    <script>
+    function read(arg_id){
+        // extract filename from C:/fakepath/filename
+        var filename = document.getElementById(arg_id).value.split('/').pop().split('\\').pop();
+        var arg_o = arg_id.replace('area', '');
+        // if value given don't change input
+        if (document.getElementById(arg_o).readOnly){
+
+        }
+        else {
+            document.getElementById(arg_o).value = filename;
+        }
+
+        var file = document.getElementById(arg_id).files[0];
+
+
+        var reader = new FileReader();
+        reader.onload = function (e) {
+            var id_name = 'text'.concat(arg_id);
+            var textArea = document.getElementById('text'.concat(arg_id));
+            //$('.summernote').summernote('insertText', e.target.result);
+            $('#' + id_name).summernote('insertText', e.target.result);
+            textArea.value = e.target.result;
+            //textArea.insertText = e.target.result;
+        };
+        reader.readAsText(file);
+    }
+    </script>
+
+
+    <!-- SCRIPT for FILES putting filenames into array input form -->
+    <script>
+    function readFiles(arg_id){
+        var container = document.getElementById(arg_id);
+        var arg_o = arg_id.replace('area', '');
+        // if empty then [] else ['name.ext', 'name2.txt', ...]
+        var output = document.getElementById(arg_o).value;
+        output = output.replace(/'/g, '"');
+        output = JSON.parse(output);
+
+        for (var i = 0; i < container.files.length; i++){
+            // does filename already exist in our list
+            if (output.indexOf(container.files[i].name) == -1){
+                output.push(container.files[i].name);
+            }
+        }
+        // save new array to input field
+        document.getElementById(arg_o).value = JSON.stringify(output);
+    }
+    </script>
+
+
+
+    <!-- VALIDATION (COLOR ME RED) on document ready and with button VALIDATE-->
+    <script>
+    var order = {{ order|safe }};
+    document.addEventListener("DOMContentLoaded", function(event) {
+        var state = document.readyState;
+        if (state == 'interactive') {
+            // alert(order[1]);
+            validate();
+        }
+    });
+
+    function validate() {
+        for (var i = 0; i < order.length; i++) {
+            if (document.getElementById(order[i]) != null){
+                var inputVal = document.getElementById(order[i]);
+                // does the ID have error handling
+                if (document.getElementById("error" + order[i]) != null) {
+                    var errorVal = document.getElementById("error" + order[i]);
+
+                    // STRING case
+                    if (document.getElementById("pattern" + order[i]) != null){
+                        var patternVal = document.getElementById("pattern" + order[i]);
+                        // PATTERN if present
+                        if (patternVal.value){
+                            var pattern = new RegExp('^' + patternVal.value + '$');
+                            if (inputVal.value == ""){
+                                inputVal.style.backgroundColor = "#FFFFFF";
+                            }
+                            else if (!pattern.test(inputVal.value)) {
+                                // RED color
+                                inputVal.style.backgroundColor = "#FF9999";
+                                //errorVal.innerHTML = "pattern: " + patternVal.value;
+                            }
+                            else{
+                                // GREEN color
+                                inputVal.style.backgroundColor = "#DFF0D8";
+                                //errorVal.innerHTML = "";
+                            }
+                        }
+                    }
+
+                    // STRING[] case
+                    if (document.getElementById("pattern_string_array" + order[i]) != null){
+                        var patternVal = document.getElementById("pattern_string_array" + order[i]);
+                        var flag = true;
+                        // PATTERN if present
+                        if (patternVal.value){
+                            var pattern = new RegExp('^' + patternVal.value + '$');
+                            if (inputVal.value == "[]"){
+                                inputVal.style.backgroundColor = "#EEEEEE";
+                            }
+                            else{
+                                var string_array = inputVal.value;
+                                string_array = string_array.replace(/'/g, '"');
+                                string_array = JSON.parse(string_array);
+                                for (var str_arr in string_array){
+                                    if (!pattern.test(string_array[str_arr])) {
+                                        // RED color
+                                        inputVal.style.backgroundColor = "#FF9999";
+                                        //errorVal.innerHTML = "pattern: " + patternVal.value;
+                                        flag = false;
+                                        break;
+                                    }
+                                }
+                            }
+                            if (flag) {
+                                // GREEN color
+                                inputVal.style.backgroundColor = "#DFF0D8";
+                                //errorVal.innerHTML = "";
+                            }
+                        }
+                    }
+
+                    // INTEGER case
+                    if (document.getElementById("minmax" + order[i]) != null){
+                        var minmax = document.getElementById("minmax" + order[i]);
+                        // no value present
+                        if (!inputVal.value){
+                            inputVal.style.backgroundColor = "#FF9999";
+                            //errorVal.innerHTML = "min, max [" + minmaxdouble.value + "]";
+                        }
+                        // is number
+                        else if (!isNaN(inputVal.value)){
+                            // whole number
+                            if (inputVal.value == parseInt(inputVal.value)) {
+                                // no min and max
+                                if (minmax.value.split(',')[0] == '-inf' && minmax.value.split(',')[1] == 'inf'){
+                                    // GREEN color
+                                    inputVal.style.backgroundColor = "#DFF0D8";
+                                    //errorVal.innerHTML = "";
+                                }
+                                else if (minmax.value.split(',')[0] == '-inf' && parseInt(minmax.value.split(',')[1]) >= inputVal.value){
+                                    // GREEN color
+                                    inputVal.style.backgroundColor = "#DFF0D8";
+                                    //errorVal.innerHTML = "";
+                                }
+                                else if (parseInt(minmax.value.split(',')[0]) <= inputVal.value && minmax.value.split(',')[1] == 'inf'){
+                                    // GREEN color
+                                    inputVal.style.backgroundColor = "#DFF0D8";
+                                    //errorVal.innerHTML = "";
+                                }
+                                else if (parseInt(minmax.value.split(',')[0]) <= inputVal.value && parseInt(minmax.value.split(',')[1]) >= inputVal.value){
+                                    // GREEN color
+                                    inputVal.style.backgroundColor = "#DFF0D8";
+                                    //errorVal.innerHTML = "";
+                                }
+                                // out of bounds
+                                else{
+                                    inputVal.style.backgroundColor = "#FF9999";
+                                    //errorVal.innerHTML = "min, max [" + minmax.value + "]";
+                                }
+                            }
+                            // not a whole number
+                            else {
+                                inputVal.style.backgroundColor = "#FF9999";
+                                //errorVal.innerHTML = "Not an integer";
+                            }
+                        }
+                        // not a number
+                        else{
+                            inputVal.style.backgroundColor = "#FF9999";
+                            //errorVal.innerHTML = "Not a number";
+                        }
+
+                    }
+
+                    // INTEGER[] case
+                    if (document.getElementById("minmax_integer_array" + order[i]) != null){
+                        var minmax = document.getElementById("minmax_integer_array" + order[i]);
+                        // empty array
+                        var integer_array = inputVal.value;
+                        integer_array = JSON.parse(integer_array);
+                        if (inputVal.value == "[]"){
+                            inputVal.style.backgroundColor = "#EEEEEE";
+                            //errorVal.innerHTML = "min, max [" + minmaxdouble.value + "]";
+                        }
+                        else{
+                            for (var int_arr in integer_array){
+                                // is number
+                                if (!isNaN(integer_array[int_arr])){
+                                    // whole number
+                                    if (integer_array[int_arr] == parseInt(integer_array[int_arr])) {
+                                        // no min and max
+                                        if (minmax.value.split(',')[0] == '-inf' && minmax.value.split(',')[1] == 'inf'){
+                                            // GREEN color
+                                            inputVal.style.backgroundColor = "#DFF0D8";
+                                            //errorVal.innerHTML = "";
+                                        }
+                                        else if (minmax.value.split(',')[0] == '-inf' && parseInt(minmax.value.split(',')[1]) >= integer_array[int_arr]){
+                                            // GREEN color
+                                            inputVal.style.backgroundColor = "#DFF0D8";
+                                            //errorVal.innerHTML = "";
+                                        }
+                                        else if (parseInt(minmax.value.split(',')[0]) <= integer_array[int_arr] && minmax.value.split(',')[1] == 'inf'){
+                                            // GREEN color
+                                            inputVal.style.backgroundColor = "#DFF0D8";
+                                            //errorVal.innerHTML = "";
+                                        }
+                                        else if (parseInt(minmax.value.split(',')[0]) <= integer_array[int_arr] && parseInt(minmax.value.split(',')[1]) >= integer_array[int_arr]){
+                                            // GREEN color
+                                            inputVal.style.backgroundColor = "#DFF0D8";
+                                            //errorVal.innerHTML = "";
+                                        }
+                                        // out of bounds
+                                        else{
+                                            inputVal.style.backgroundColor = "#FF9999";
+                                            //errorVal.innerHTML = "min, max [" + minmax.value + "]";
+                                            break;
+                                        }
+                                    }
+                                    // not a whole number
+                                    else {
+                                        inputVal.style.backgroundColor = "#FF9999";
+                                        //errorVal.innerHTML = "Not an integer";
+                                        break;
+                                    }
+                                }
+                                // not a number
+                                else{
+                                    inputVal.style.backgroundColor = "#FF9999";
+                                    //errorVal.innerHTML = "Not a number";
+                                    break;
+                                }
+                            }
+                        }
+                    }
+
+                    // DOUBLE case
+                    if (document.getElementById("minmaxdouble" + order[i]) != null){
+                        var minmaxdouble = document.getElementById("minmaxdouble" + order[i]);
+                        // no value present
+                        if (!inputVal.value){
+                            inputVal.style.backgroundColor = "#FF9999";
+                            //errorVal.innerHTML = "min, max [" + minmaxdouble.value + "]";
+                        }
+                        // is number
+                        else if (!isNaN(inputVal.value)){
+                            // is float
+                            if (inputVal.value == parseFloat(inputVal.value)) {
+                                // no min and max
+                                if (minmaxdouble.value.split(',')[0] == '-inf' && minmaxdouble.value.split(',')[1] == 'inf'){
+                                    // GREEN color
+                                    inputVal.style.backgroundColor = "#DFF0D8";
+                                    //errorVal.innerHTML = "";
+                                }
+                                else if (minmaxdouble.value.split(',')[0] == '-inf' && parseFloat(minmaxdouble.value.split(',')[1]) >= inputVal.value){
+                                    // GREEN color
+                                    inputVal.style.backgroundColor = "#DFF0D8";
+                                    //errorVal.innerHTML = "";
+                                }
+                                else if (parseFloat(minmaxdouble.value.split(',')[0]) <= inputVal.value && minmaxdouble.value.split(',')[1] == 'inf'){
+                                    // GREEN color
+                                    inputVal.style.backgroundColor = "#DFF0D8";
+                                    //errorVal.innerHTML = "";
+                                }
+                                else if (parseFloat(minmaxdouble.value.split(',')[0]) <= inputVal.value && parseFloat(minmaxdouble.value.split(',')[1]) >= inputVal.value){
+                                    // GREEN color
+                                    inputVal.style.backgroundColor = "#DFF0D8";
+                                    //errorVal.innerHTML = "";
+                                }
+                                // out of bounds
+                                else{
+                                    inputVal.style.backgroundColor = "#FF9999";
+                                    //errorVal.innerHTML = "min, max [" + minmaxdouble.value + "]";
+                                }
+                            }
+                            // not a whole number
+                            else {
+                                inputVal.style.backgroundColor = "#FF9999";
+                                //errorVal.innerHTML = "Not an integer";
+                            }
+                        }
+                        // not a number
+                        else{
+                            inputVal.style.backgroundColor = "#FF9999";
+                            //errorVal.innerHTML = "Not a number";
+                        }
+                    }
+
+                    // DOUBLE[] case
+                    if (document.getElementById("minmax_double_array" + order[i]) != null){
+                        var minmax = document.getElementById("minmax_double_array" + order[i]);
+                        // empty array
+                        var double_array = inputVal.value;
+                        double_array = JSON.parse(double_array);
+                        if (inputVal.value == "[]"){
+                            inputVal.style.backgroundColor = "#EEEEEE";
+                            //errorVal.innerHTML = "min, max [" + minmaxdouble.value + "]";
+                        }
+                        else{
+                            for (var double_arr in double_array){
+                                // is number
+                                if (!isNaN(double_array[double_arr])){
+                                    // is float
+                                    if (double_array[double_arr] == parseFloat(double_array[double_arr])) {
+                                        // no min and max
+                                        if (minmax.value.split(',')[0] == '-inf' && minmax.value.split(',')[1] == 'inf'){
+                                            // GREEN color
+                                            inputVal.style.backgroundColor = "#DFF0D8";
+                                            //errorVal.innerHTML = "";
+                                        }
+                                        else if (minmax.value.split(',')[0] == '-inf' && parseInt(minmax.value.split(',')[1]) >= double_array[double_arr]){
+                                            // GREEN color
+                                            inputVal.style.backgroundColor = "#DFF0D8";
+                                            //errorVal.innerHTML = "";
+                                        }
+                                        else if (parseInt(minmax.value.split(',')[0]) <= double_array[double_arr] && minmax.value.split(',')[1] == 'inf'){
+                                            // GREEN color
+                                            inputVal.style.backgroundColor = "#DFF0D8";
+                                            //errorVal.innerHTML = "";
+                                        }
+                                        else if (parseInt(minmax.value.split(',')[0]) <= double_array[double_arr] && parseInt(minmax.value.split(',')[1]) >= double_array[double_arr]){
+                                            // GREEN color
+                                            inputVal.style.backgroundColor = "#DFF0D8";
+                                            //errorVal.innerHTML = "";
+                                        }
+                                        // out of bounds
+                                        else{
+                                            inputVal.style.backgroundColor = "#FF9999";
+                                            //errorVal.innerHTML = "min, max [" + minmax.value + "]";
+                                            break;
+                                        }
+                                    }
+                                    // not a whole number
+                                    else {
+                                        inputVal.style.backgroundColor = "#FF9999";
+                                        //errorVal.innerHTML = "Not an integer";
+                                        break;
+                                    }
+                                }
+                                // not a number
+                                else{
+                                    inputVal.style.backgroundColor = "#FF9999";
+                                    //errorVal.innerHTML = "Not a number";
+                                    break;
+                                }
+                            }
+                        }
+                    }
+                    //end of string,integer,double...
+                }
+            }
+        }
+    }
+    </script>
+
+
+    <!-- NAVIGATE SCRIPT -->
+    <script>
+    function navigate(id) {
+        var button = document.getElementById("navigation" + id);
+        button.click();
+    }
+    </script>
+
+    <!-- ENABLE ADD ENTITY BUTTON also exclude characters forbidden in folder names and already existing entities-->
+    <script>
+    function enable_add_button(value, name) {
+        var isValid = true;
+        var button = document.getElementById("add_entity" + name.replace("add_entity_name", ""));
+        var data = document.getElementById(name.replace("add_entity_name", ""));
+        var data = data.value;
+        data = data.replace(/'/g, '"');
+        data = JSON.parse(data);
+        for (var d in data){
+            if (data[d] == value){
+                isValid = false;
+            }
+        }
+        if ( value.match(/["*\/:<>?\\|-]/)) {
+            isValid = false;
+        }
+        if (value.length > 0 && isValid){
+            button.disabled = false;
+        }
+        else{
+            button.disabled = true;
+        }
+    }
+    </script>
+
+    <!-- STRING[] to input -->
+    <script>
+    function string_array(value, name) {
+        var input = document.getElementById(name.replace("string_array", ""));
+        var data = value;
+        if (data == ""){
+            input.value = "[]";
+            return
+        }
+        data = data.split(",");
+        var output = "[";
+        for (var i = 0; i < data.length; i++) {
+            output += "'" + data[i] + "'";
+            if (i < data.length - 1){
+                output += ",";
+            }
+        }
+        output += "]";
+        input.value = output;
+    }
+    </script>
+
+    <!-- INTEGER[] to input -->
+    <script>
+    function integer_array(value, name) {
+        var input = document.getElementById(name.replace("integer_array", ""));
+        var data = value;
+        if (data == ""){
+            input.value = "[]";
+            return
+        }
+        data = data.split(",");
+        var output = "[";
+        for (var i = 0; i < data.length; i++) {
+            output += data[i];
+            if (i < data.length - 1){
+                output += ",";
+            }
+        }
+        output += "]";
+        input.value = output;
+    }
+    </script>
+
+
+
+{% endblock %}

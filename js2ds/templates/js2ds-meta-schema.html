@@ -1,0 +1,49 @@
+{% extends '../templates/bootstrap.html' %}
+
+{% load bootstrap3 %}
+
+{% block bootstrap3_extra_head %}
+    {% load staticfiles %}
+{% endblock %}
+
+{% load custom_tags %}
+
+{% block bootstrap3_content %}
+    <div class="container">
+        <h1>{% block title %}{{ title }}{% endblock %}</h1>
+
+
+        <!-- this are the two buttons for HOME and SCHEMA MANAGEMENT -->
+        {% buttons %}
+            <a href="{% url 'js2ds-index' %}">
+                <button type="button" class="btn btn-info">
+                    {% bootstrap_icon "home" %} Home
+                </button>
+            </a>
+            <a href="{% url 'js2ds-schema' %}">
+                <button type="button" class="btn btn-info">
+                    {% bootstrap_icon "wrench" %} Schema Management
+                </button>
+            </a>
+        {% endbuttons %}
+        <!-- end of two buttons -->
+
+
+        {% autoescape off %}{% bootstrap_messages %}{% endautoescape %}
+
+        <!-- panel with meta-json data -->
+        <!-- the content is created with meta-schemas.py -->
+        <hr>
+        {% block content %}
+        <h2>PropertyTypes.atjs</h2>
+        {% csrf_token %}
+        <div class="panel panel-default">
+          <div class="panel-body">
+              <textarea class="form-control" rows="20" id="comment" name="textarea">{% nice_json schema_data %}</textarea>
+          </div>
+        </div>
+        {% endblock %}
+
+    </div>
+
+{% endblock %}

@@ -1,0 +1,239 @@
+{% extends '../templates/bootstrap.html' %}
+
+{% load bootstrap3 %}
+
+{% block bootstrap3_extra_head %}
+    {% load staticfiles %}
+    <!-- hide.css styles the js2ds.html -->
+    <link rel="stylesheet" type="text/css" href="{% static 'css/hide.css' %} ">
+{% endblock %}
+
+{% block bootstrap3_content %}
+    <div class="container">
+        <h1>{% block title %}{{ title }}{% endblock %}</h1>
+
+        <!-- schema management and Refresh -->
+        {% buttons %}
+            <a href="">
+                <button type="button" class="btn btn-info">
+                    {% bootstrap_icon "refresh" %} Refresh
+                </button>
+            </a>
+            <a href="{% url 'js2ds-schema' %}">
+                <button type="button" class="btn btn-info">
+                    {% bootstrap_icon "wrench" %} Schema Management
+                </button>
+            </a>
+        {% endbuttons %}
+        <hr>
+
+
+        {% autoescape off %}{% bootstrap_messages %}{% endautoescape %}
+        {% block content %}
+
+        <!-- INFO LABEL -->
+        {% if log_message %}
+            {% if flag == True %}
+                <span class="label label-success">{{ log_message }}</span>
+            {% else %}
+                <span class="label label-danger">{{ log_message }}</span>
+            {% endif %}
+        {% endif %}
+
+        <!-- Add new SET/GROUP with schema and project path input -->
+        <h2>
+            <span>Create new group/set</span>
+            <button class="btn btn-info collapse_button" type="button" value="collapse_button">
+            </button>
+        </h2>
+
+        <form class="form-horizontal well" id="collapse_button" role="form" method="post" enctype="multipart/form-data" style="display: none">
+        {% csrf_token %}
+            <!-- INPUT GROUP NAME -->
+            <div class="form-group">
+                <label class="col-sm-2 col-xs-12">Name</label>
+                <div class="col-sm-12 col-xs-12">
+                    <input name="group_name" type="text" class="form-control" placeholder="Input group/set name" required="required">
+                </div>
+            </div>
+
+            <!-- INPUT AUTHOR-->
+            <div class="form-group">
+                <label class="col-sm-2 col-xs-12">Author</label>
+                <div class="col-sm-12 col-xs-12">
+                    <input name="group_author" type="text" class="form-control" placeholder="Input author name" required="required">
+                </div>
+            </div>
+
+            <!-- INPUT PROJECT LOCATION -->
+            <div class="form-group">
+                <label class="col-sm-12 col-xs-12">Project location</label>
+                <div class="col-sm-12 col-xs-12">
+                    <input name="group_project" type="text" class="form-control" placeholder="Input path ( example 'c:/project_root' )" required="required">
+                </div>
+            </div>
+
+            <!-- INPUT SCHEMA LOCATION -->
+            <div class="form-group">
+                <label class="col-sm-2 col-xs-12">Schema location</label>
+                <div class="col-sm-12 col-xs-12">
+                    <input name="group_schema" type="text" class="form-control" placeholder="Input path ( example 'c:/schema' )" required="required">
+                </div>
+            </div>
+
+            <!-- INPUT SCHEMA FILES -->
+            <div class="form-group">
+                <label class="col-sm-2 col-xs-12">Schema files</label>
+                <div class="col-sm-12 col-xs-12">
+                    <input name="group_schema_files" id="input_schema_files" type="text" class="form-control" placeholder="Use button to upload schema files" required="required">
+                </div>
+            </div>
+
+            <!-- BUTTON UPLOAD SCHEMA FILES -->
+            <label class="btn btn-success btn-file">
+                {% bootstrap_icon "folder-open" %} Upload Schema Files
+                <input name="group_upload_schema_files" id="schema_files" type="file" style="display: none;" onchange="readFiles(this.id)" multiple>
+            </label>
+
+            <!-- BUTTON CREATE -->
+            <button class="btn btn-success" name="group_add" value="true" type="submit">
+                {% bootstrap_icon "plus" %} Create Group
+            </button>
+        </form>
+        <hr>
+
+
+
+        {% for project_name, key in group_data.items %}
+            <!-- Project list, and ADD button with input field -->
+            <h2>
+                <span>{{ project_name }}</span>
+                <button class="btn btn-info collapse_button" type="button" value="collapse_button{{ project_name }}">
+                </button>
+            </h2>
+            <p><b>{{ project_name }} location:</b> {{ key.project }}<b>, Schemas location:</b> {{ key.schema }}<b>, Author:</b> {{ key.author }}<b>, Date:</b> {{ key.date }}</p>
+            <div class="well" id="collapse_button{{ project_name }}" style="display: none">
+            <div class="form-group">
+                <form class="form-horizontal well" role="form" method="post">
+                {% csrf_token %}
+                    <div class="form-group">
+                        <label class="col-sm-2 col-xs-12">Name</label>
+                        <div class="col-sm-12 col-xs-12">
+                            <input name="add_{{ project_name }}" type="text" class="form-control" placeholder="Input new {{ project_name }} entity name" onkeyup="enable_add_button(this.value, this.name)" autocomplete="off">
+                        </div>
+                    </div>
+                    <!-- BUTTON ADD -->
+                    <input id="{{ project_name }}" value="{{ key.project_list }}" hidden>
+                    <button class="btn btn-success" id="add_entity{{ project_name }}" type="submit" formaction="/../js2ds/" disabled>
+                        {% bootstrap_icon "plus" %} Add {{ project_name }}
+                    </button>
+                </form>
+            </div>
+
+            <!-- list of all project elements with EDIT and DELETE button -->
+            {% for name in key.project_list %}
+            <div class="panel panel-default">
+              <table class="table table-hover">
+                  <form role="form" action="" method="post">
+                      {% csrf_token %}
+                        <tbody>
+                          <tr>
+                            <td>
+                              <h4><b>{{ name }}</b></h4>
+                            </td>
+                            <td class="text-right text-nowrap">
+                              <button class="btn btn-info" type="submit" value="{{ name }}" formaction="/../js2ds/" name="edit_{{ project_name }}">
+                                  {% bootstrap_icon "wrench" %} Edit
+                              </button>
+                              <button class="btn btn-warning" type="submit" value="{{ name }}" formaction="" name="delete_{{ project_name }}">
+                                {% bootstrap_icon "trash" %} Delete
+                              </button>
+                            </td>
+                          </tr>
+                        </tbody>
+                  </form>
+              </table>
+            </div>
+            {% endfor %}
+
+            <!-- DELETE whole group/set -->
+            <form role="form" action="" method="post">
+                {% csrf_token %}
+                <button class="btn btn-warning" type="submit" value="{{ project_name }}" formaction="" name="delete_group">
+                    {% bootstrap_icon "trash" %} Delete {{ project_name }} group
+                </button>
+            </form>
+
+        </div>
+        <hr>
+        {% endfor %}
+
+        {% endblock %}
+    </div>
+
+    <!-- SCRIPT for FILES putting filenames into array input form -->
+    <script>
+    function readFiles(arg_id){
+        var container = document.getElementById(arg_id);
+        var arg_o = 'input_schema_files';
+        var output = [];
+
+        for (var i = 0; i < container.files.length; i++){
+            // does filename already exist in our list
+            if (output.indexOf(container.files[i].name) == -1){
+                output.push(container.files[i].name);
+            }
+        }
+        // save new array to input field
+        document.getElementById(arg_o).value = JSON.stringify(output);
+    }
+    </script>
+
+    <!-- SCRIPT for collapse_button hides and shows elements -->
+    <script>
+    var acc = document.getElementsByClassName("collapse_button");
+    var i;
+
+    for (i = 0; i < acc.length; i++) {
+        acc[i].onclick = function(){
+            this.classList.toggle("active");
+            //this.nextElementSibling.classList.toggle("show");
+            var div = document.getElementById(this.value);
+            if (div.style.display !== 'none') {
+                div.style.display = 'none';
+            }
+            else {
+                div.style.display = 'block';
+            }
+        }
+    }
+    </script>
+
+    <!-- ENABLE ADD ENTITY BUTTON also exclude characters forbidden in folder names and already existing entities-->
+    <script>
+    function enable_add_button(value, name) {
+        var isValid = true;
+        var button = document.getElementById("add_entity" + name.replace("add_", ""));
+        var data = document.getElementById(name.replace("add_", ""));
+        var data = data.value;
+        data = data.replace(/'/g, '"');
+        data = JSON.parse(data);
+        for (var d in data){
+            if (data[d] == value){
+                isValid = false;
+            }
+        }
+        if ( value.match(/["*\/:<>?\\|-]/)) {
+            isValid = false;
+        }
+        if (value.length > 0 && isValid){
+            button.disabled = false;
+        }
+        else{
+            button.disabled = true;
+        }
+    }
+    </script>
+
+
+{% endblock %}
